@@ -4,3 +4,4 @@ __pycache__/
 *$py.class
 
 /01_data/
+local_settings.py

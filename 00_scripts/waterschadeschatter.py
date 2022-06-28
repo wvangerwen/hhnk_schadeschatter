@@ -9,6 +9,7 @@ TODO
 """
 
 
+import functools
 import sys
 sys.path.insert(0, r'E:\github\wvangerwen\hhnk-research-tools') #import local hrt installation.
 import importlib
@@ -30,7 +31,7 @@ importlib.reload(wss_calculations)
 # %%
 
 cfg_file = r'../01_data/schadetabel_hhnk_2020.cfg'
-landuse_file = r'../01_data/waterland_landuse2019.tif'
+landuse_file = r'../01_data/landuse2019_tiles/waterland_landuse2019.vrt'
 # depth_file =  r'../01_data/texel_80.tif'
 # output_file = r'../01_data/damage_texel_80.tif'
 
@@ -38,16 +39,15 @@ depth_file = r'../01_data/marken_rev23_max_depth_blok_GGG_T10.tif'
 output_file = r'../01_data/marken_rev23_damage_blok_GGG_T10.tif'
 
 
-wss_settings = {'duur': '1 dag',
+wss_settings = {'duur_uur': 48, #uren
                 'herstelperiode':'10 dagen',
                 'maand':'sep',
                 'cfg_file':cfg_file}
 
 
-dmg_table_landuse, dmg_table_general = wss_loading.read_dmg_table_config(cfg_file)
+dmg_table_landuse, dmg_table_general = wss_loading.read_dmg_table_config(wss_settings)
 
 indices={}
-indices['duur'] = dmg_table_general['inundatieduur'].index(wss_settings['duur'])
 indices['herstelperiode'] = dmg_table_general['herstelperiode'].index(wss_settings['herstelperiode'])
 indices['maand'] = dmg_table_general['maand'].index(wss_settings['maand'])
 
@@ -68,13 +68,24 @@ if not os.path.exists(output_file):
     target_ds = None
 
 
+dmg_table_landuse[0].gamma_inundatieduur_interp
+
 # %%
 from osgeo import gdal
 gdal.UseExceptions()
-class Waterschadeschatter():
-    def __init__(self, depth_file, landuse_file, output_file, wss_settings, min_block_size=2048):
-        
 
+class Waterschadeschatter():
+    """Waterschadeschatter berekening van de schade bij een bepaalde inundatiediepte per 
+    landgebruiksfunctie.
+    wss_settings heeft onderstaand format. De naamgeving van herstelperiode en maand moet
+    overeenkomen met de .cfg. De duur is een integer in uren. In de tabel vindt daarbij 
+    lineare interpolatie plaats.
+    wss_settings = {'duur_uur': '1 dag',
+                'herstelperiode':'10 dagen',
+                'maand':'sep',
+                'cfg_file':cfg_file}"""
+
+    def __init__(self, depth_file, landuse_file, output_file, wss_settings, min_block_size=2048):
         self.wss_settings = wss_settings
         self.min_block_size=min_block_size
         self.output_file = output_file
@@ -87,19 +98,23 @@ class Waterschadeschatter():
         #Get indices
         self.indices = self.get_dmg_table_indices()
 
-    def create_output_raster(self):
+
+    def create_output_raster(self, verbose=True):
         #Create output raster
         if not os.path.exists(self.output_file):
-            print("creating output raster.")
+            if verbose:
+                print(f"creating output raster: {self.output_file}")
             target_ds = hrt.create_new_raster_file(file_name=self.output_file,
                 nodata=0,
                 meta=self.depth_raster.metadata,)
             target_ds = None
+        else:
+            if verbose:
+                print(f"output raster already exists: {self.output_file}")
 
 
     def get_dmg_table_indices(self):
         indices={}
-        indices['duur'] = self.dmg_table_general['inundatieduur'].index(self.wss_settings['duur'])
         indices['herstelperiode'] = self.dmg_table_general['herstelperiode'].index(self.wss_settings['herstelperiode'])
         indices['maand'] = self.dmg_table_general['maand'].index(self.wss_settings['maand'])
         return indices
@@ -135,9 +150,6 @@ class Waterschadeschatter():
 
         len_total = len(blocks_df)
         for idx, block_row in blocks_df.iterrows():
-            # if idx==35: #geeft dmg
-            # if idx==2:
-        # if idx==13:
                 #Load landuse 
                 window_depth=block_row['window_readarray']
 
@@ -154,7 +166,12 @@ class Waterschadeschatter():
                     depth_block[depth_block==self.depth_raster.nodata] = 0
 
                     #Calculate damage
-                    damage_block=wss_calculations.calculate_damage(lu_block, depth_block, indices, dmg_table_landuse, dmg_table_general, pixel_factor)
+                    damage_block=wss_calculations.calculate_damage(lu_block=lu_block, 
+                                                depth_block=depth_block, 
+                                                indices=self.indices, 
+                                                dmg_table_landuse=self.dmg_table_landuse, 
+                                                dmg_table_general=self.dmg_table_general, 
+                                                pixel_factor=pixel_factor)
 
                     #Write to file
                     dmg_band.WriteArray(damage_block, xoff=window_depth[0], yoff=window_depth[1])
@@ -167,6 +184,16 @@ class Waterschadeschatter():
         target_ds = None
 
 
+    def __repr__(self):
+        """List available objects, distinction between functions and variables"""
+        funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and hasattr(getattr(self,i)
+        , '__call__')])
+        variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(getattr(self,i)
+        , '__call__')])
+        repr_str = f"""functions: {funcs}
+variables: {variables}"""
+        return repr_str
+
 # %%
 
 self = Waterschadeschatter(depth_file=depth_file, 
@@ -174,16 +201,26 @@ self = Waterschadeschatter(depth_file=depth_file,
                             output_file=output_file,
                             wss_settings=wss_settings)
 
-#Aanmaken leeg output raster.
-self.create_output_raster()
+# Aanmaken leeg output raster.
+# self.create_output_raster()
 
-#Berkenen schaderaster
-self.calculate_damage_raster()
+# # #Berkenen schaderaster
+# self.calculate_damage_raster()
+
+
 
 # %%
-# if True:
-#Testberekening 1 pixel
+lu_block=lu_block
+depth_block=depth_block
+indices=self.indices
+dmg_table_landuse=self.dmg_table_landuse
+dmg_table_general=self.dmg_table_general
+pixel_factor=pixel_factor
 
+
+
+
+# %%
 depth = 0.0142824
 #dmg_lizard = 0.00752583
 # dmg_wss = 0.006045

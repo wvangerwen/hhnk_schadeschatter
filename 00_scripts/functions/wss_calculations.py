@@ -33,7 +33,7 @@ def calculate_damage(lu_block, depth_block, indices, dmg_table_landuse, dmg_tabl
     y1=stacked_array[index_onder, j, k]
     y2=stacked_array[index_boven, j, k]
     gamma_inundatiediepte = ((y2 - y1) /           \
-        (xp[index_boven] - xp[index_onder])) * (depth_block-xp[index_onder]) + y2
+        (xp[index_boven] - xp[index_onder])) * (depth_block-xp[index_onder]) + y1
     gamma_inundatiediepte[mask] = y1[mask]
 
 
@@ -43,7 +43,7 @@ def calculate_damage(lu_block, depth_block, indices, dmg_table_landuse, dmg_tabl
     def calculate_damge_direct(i):
         """schade = max. directe schade · γdiepte · γduur · γseizoen + indirecte schade per dag · hersteltijd"""
         lu = dmg_table_landuse[i]
-        return lu.direct_gem * lu.gamma_inundatieduur[indices['duur']] * lu.gamma_maand[indices['maand']] * lu.direct_eenheid_factor
+        return lu.direct_gem * lu.gamma_inundatieduur_interp * lu.gamma_maand[indices['maand']] * lu.direct_eenheid_factor
 
     def calculate_damge_indirect(i):
         #TODO hoe werkt inundatiediepte door op indirecte schade?
@@ -59,7 +59,7 @@ def calculate_damage(lu_block, depth_block, indices, dmg_table_landuse, dmg_tabl
     damage_direct = lookup_direct[lu_block] #same as np.take(lookup_direct, lu_block), .take seems slower.
     damage_indirect = lookup_indirect[lu_block]
 
-    #Damage
-    ##schade = max. directe schade · γdiepte · γduur · γseizoen + indirecte schade per dag · hersteltijd
-    ## damage is per m2. Multiply by pixelfactor to get damage per pixel.
+    # Damage
+    #schade = max. directe schade · γdiepte · γduur · γseizoen + indirecte schade per dag · hersteltijd
+    # damage is per m2. Multiply by pixelfactor to get damage per pixel.
     return (damage_direct + damage_indirect) * gamma_inundatiediepte * pixel_factor
