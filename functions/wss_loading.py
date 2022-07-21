@@ -1,5 +1,6 @@
 import configparser
 import numpy as np
+import os
 
 def read_dmg_table_config(wss_settings) -> dict:
     """Read damagetable. Returns dictionary with keys corresponding to the 

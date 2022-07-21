@@ -1,4 +1,8 @@
 import numpy as np
+
+DMG_NODATA = 0 #let op staat dubbel, ook in wss_main.
+
+
 def calculate_damage(lu_block, depth_block, indices, dmg_table_landuse, dmg_table_general, pixel_factor):
     #GAMMA DEPTH CALCULATION
 
@@ -36,6 +40,9 @@ def calculate_damage(lu_block, depth_block, indices, dmg_table_landuse, dmg_tabl
         (xp[index_boven] - xp[index_onder])) * (depth_block-xp[index_onder]) + y1
     gamma_inundatiediepte[mask] = y1[mask]
 
+    #Indirecte schade telt alleen bij inundatiediepte >0
+    mask_indirect = depth_block<=0
+
 
     #DAMAGE CALCULATION
 
@@ -58,8 +65,9 @@ def calculate_damage(lu_block, depth_block, indices, dmg_table_landuse, dmg_tabl
     # Max directe schade.
     damage_direct = lookup_direct[lu_block] #same as np.take(lookup_direct, lu_block), .take seems slower.
     damage_indirect = lookup_indirect[lu_block]
+    damage_indirect[mask_indirect] = DMG_NODATA
 
     # Damage
     #schade = max. directe schade · γdiepte · γduur · γseizoen + indirecte schade per dag · hersteltijd
     # damage is per m2. Multiply by pixelfactor to get damage per pixel.
-    return (damage_direct + damage_indirect) * gamma_inundatiediepte * pixel_factor
+    return (damage_direct * gamma_inundatiediepte + damage_indirect) * pixel_factor

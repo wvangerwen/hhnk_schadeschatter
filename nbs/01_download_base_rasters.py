@@ -2,6 +2,8 @@
 Klaarzetten van de landgebruiksrasters.
 
 """
+
+
 # %%
 import threedi_scenario_downloader.downloader as dl
 import os
@@ -13,12 +15,10 @@ import numpy as np
 # import functions.wsa_tools as wsa #general tools used across all scripts
 import hhnk_research_tools as hrt
 from local_settings import API_KEY
-
+# %%
 # this allows GDAL to throw Python Exceptions
 gdal.UseExceptions()
 
-username = 'wietse.vangerwen'
-# dl.set_headers(username=username,password=getpass.getpass('Pass: ')) #Kan gewoon leeg blijven voor landgebruik.
 dl.set_api_key(API_KEY)
 
 #uuid of raster
@@ -33,7 +33,6 @@ uuids['landuse2020'] = 'afedc34b-427e-4fd1-ac19-ba83032e2407'
 
 output_dir={}
 output_dir['landuse2020'] = r'E:\github\wvangerwen\hhnk_schadeschatter\01_data\landuse2020_tiles'
-
 
 #resolution of output raster.
 RESOLUTION = 0.5 #m
@@ -107,6 +106,7 @@ for block in blocks:
                             bounds_srs  = "EPSG:28992",
                             pathname    = pathname[block],
                             is_threedi_scenario = is_threedi_scenario[block])
+                            
 # %% Create VRT
 for key, uuid in uuids.items(): 
-    hrt.build_vrt(output_dir[key])
+    hrt.build_vrt(output_dir[key], bandlist=None, overwrite=True)
