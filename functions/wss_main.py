@@ -1,15 +1,19 @@
-import functools
 import sys
-sys.path.insert(0, r'E:\github\wvangerwen\hhnk-research-tools') #import local hrt installation.
+from pathlib import Path
+import os
+
+if str(Path(os.getcwd()).parent.parent) not in sys.path:
+    sys.path.append(str(Path(os.getcwd()).parent.parent))
+
+import hhnk_schadeschatter.local_settings as local_settings
+local_settings.fix_path()
+
 import importlib
 import hhnk_research_tools as hrt
 importlib.reload(hrt)
 
-import numpy as np
-import os
 import hhnk_schadeschatter.functions.wss_loading as wss_loading
 import hhnk_schadeschatter.functions.wss_calculations as wss_calculations
-import hhnk_schadeschatter.functions.add_to_hrt as hrt_temp
 
 from osgeo import gdal
 gdal.UseExceptions()
@@ -73,9 +77,6 @@ class Waterschadeschatter():
         return indices
 
 
-
-
-
     def run(self, initialize_output=True):
 
         if initialize_output:
@@ -89,7 +90,7 @@ class Waterschadeschatter():
         dmg_band = target_ds.GetRasterBand(1)
 
         #Difference between landuse and depth raster.
-        dx_min, dy_min = hrt_temp.dx_dy_between_rasters(meta_big=self.lu_raster.metadata, meta_small=self.depth_raster.metadata)
+        dx_min, dy_min = hrt.dx_dy_between_rasters(meta_big=self.lu_raster.metadata, meta_small=self.depth_raster.metadata)
 
         pixel_factor = self.depth_raster.pixelarea
         blocks_df = self.depth_raster.generate_blocks()
@@ -109,10 +110,12 @@ class Waterschadeschatter():
                 if lu_block.mean()!=0:
                     # Load depth
                     depth_block = self.depth_raster._read_array(window=window_depth)
-                    depth_block[depth_block==self.depth_raster.nodata] = np.nan #Schadetabel loopt vanaf -0.01cm
+                    # depth_mask = depth_block==self.depth_raster.nodata
+                    # depth_block[depth_mask] = np.nan #Schadetabel loopt vanaf -0.01cm
 
                     #Calculate damage
-                    damage_block=wss_calculations.calculate_damage(lu_block=lu_block, 
+                    damage_block=wss_calculations.calculate_damage(caller = self,
+                                                lu_block=lu_block, 
                                                 depth_block=depth_block, 
                                                 indices=self.indices, 
                                                 dmg_table_landuse=self.dmg_table_landuse, 
