@@ -164,7 +164,7 @@ cfg_file = r'../01_data/cfg/cfg_lizard.cfg'
 landuse_file = r'../01_data/landuse2019_tiles/waterland_landuse2019.vrt'
 landuse_file = r"\\srv57d1\geo_info\02_Werkplaatsen\06_HYD\Projecten\HKC21002 Schadecurven\07. SchadecurvenPy\03_gebieden\06_ad\03_downloads\landuse2019_tiles\ad_landuse2019.vrt"
 
-wss_settings = {'duur_uur': 24, #uren
+wss_settings = {'inundation_period': 24, #uren
                 'herstelperiode':'10 dagen',
                 'maand':'sep',
                 'cfg_file':cfg_file,

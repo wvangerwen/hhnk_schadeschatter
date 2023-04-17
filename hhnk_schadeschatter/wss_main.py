@@ -1,21 +1,20 @@
-import sys
-from pathlib import Path
+# %%
+import importlib
 import os
 
-if str(Path(os.getcwd()).parent.parent) not in sys.path:
-    sys.path.append(str(Path(os.getcwd()).parent.parent))
+import hhnk_research_tools as hrt
 
 import hhnk_schadeschatter.local_settings as local_settings
-local_settings.fix_path()
 
-import importlib
-import hhnk_research_tools as hrt
+# local_settings.fix_path()
+
 importlib.reload(hrt)
 
-import hhnk_schadeschatter.functions.wss_loading as wss_loading
-import hhnk_schadeschatter.functions.wss_calculations as wss_calculations
-
 from osgeo import gdal
+
+import hhnk_schadeschatter.wss_calculations as wss_calculations
+import hhnk_schadeschatter.wss_loading as wss_loading
+
 gdal.UseExceptions()
 
 DMG_NODATA = 0
@@ -26,10 +25,13 @@ class Waterschadeschatter():
     wss_settings heeft onderstaand format. De naamgeving van herstelperiode en maand moet
     overeenkomen met de .cfg. De duur is een integer in uren. In de tabel vindt daarbij 
     lineare interpolatie plaats.
-    wss_settings = {'duur_uur': 48, #uren
+    wss_settings = {'inundation_period': 48, #uren
                 'herstelperiode':'10 dagen',
                 'maand':'sep',
-                'cfg_file':cfg_file}
+                'cfg_file':cfg_file,
+                'dmg_type':'gem'} 
+
+    dmg_type in ["min", "gem", "max"]
                 
     LET OP: depth_file heeft dieptes nodig vanaf -0.01cm, zoals in .cfg ook staat. Dit moet
     dus ook meegenomen bij de vertaling van waterstand naar waterdiepte. 
@@ -41,12 +43,22 @@ class Waterschadeschatter():
         self.output_file = output_file
         self.lu_raster = hrt.Raster(landuse_file)
         self.depth_raster = hrt.Raster(depth_file, self.min_block_size)
+        self.gamma_inundatiediepte = None
+
+        self.validate()
 
         #Inladen configuratie
         self.dmg_table_landuse, self.dmg_table_general = wss_loading.read_dmg_table_config(self.wss_settings)
 
         #Get indices
         self.indices = self.get_dmg_table_indices()
+
+
+    def validate(self):
+        """check if input exists"""
+        for filepath in [self.lu_raster.pl, self.depth_raster.pl]:
+            if not os.path.exists(filepath):
+                raise Exception(f"could not find input file in: {filepath}")
 
 
     def create_output_raster(self, verbose=True, overwrite=False):
@@ -86,11 +98,11 @@ class Waterschadeschatter():
                 print(f'Output {self.output_file} does not exist. Run this function with initialize_output=True')
                 return
 
-        target_ds=gdal.Open(self.output_file, gdal.GA_Update)
+        target_ds=gdal.Open(str(self.output_file), gdal.GA_Update)
         dmg_band = target_ds.GetRasterBand(1)
 
         #Difference between landuse and depth raster.
-        dx_min, dy_min = hrt.dx_dy_between_rasters(meta_big=self.lu_raster.metadata, meta_small=self.depth_raster.metadata)
+        dx_min, dy_min, dx_max, dy_max = hrt.dx_dy_between_rasters(meta_big=self.lu_raster.metadata, meta_small=self.depth_raster.metadata)
 
         pixel_factor = self.depth_raster.pixelarea
         blocks_df = self.depth_raster.generate_blocks()
@@ -147,28 +159,29 @@ variables: {variables}"""
 if __name__ == '__main__':
 
 
-    if False:
+    if True:
         #Variables
-        cfg_file = r'../01_data/schadetabel_hhnk_2020.cfg'
-        landuse_file = r'../01_data/landuse2019_tiles/waterland_landuse2019.vrt'
+        cfg_file = r'../01_data/cfg/cfg_hhnk_2020.cfg'
+        landuse_file = r'../01_data/landuse2020_tiles/combined_rasters.vrt'
 
         depth_file = r'../01_data/marken_rev23_max_depth_blok_GGG_T10.tif'
         output_file = r'../01_data/marken_rev23_damage_blok_GGG_T10.tif'
 
 
-        wss_settings = {'duur_uur': 48, #uren
+        wss_settings = {'inundation_period': 48, #uren
                         'herstelperiode':'10 dagen',
                         'maand':'sep',
-                        'cfg_file':cfg_file}
+                        'cfg_file':cfg_file,
+                        'dmg_type':'gem'}
 
         #Calculation
-        wss_local = Waterschadeschatter(depth_file=depth_file, 
+        self = Waterschadeschatter(depth_file=depth_file, 
                                 landuse_file=landuse_file, 
                                 output_file=output_file,
                                 wss_settings=wss_settings)
 
-        # # Aanmaken leeg output raster.
-        wss_local.create_output_raster()
+        # Aanmaken leeg output raster.
+        self.create_output_raster()
 
-        # # #Berkenen schaderaster
-        wss_local.calculate_damage_raster()
+        # Berkenen schaderaster
+        self.run(initialize_output=False)

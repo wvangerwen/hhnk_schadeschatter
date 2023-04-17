@@ -78,7 +78,7 @@ landuse_file = r'../01_data/landuse2019_tiles/waterland_landuse2019.vrt'
 depth_file = r'../01_data/marken_rev23_max_depth_blok_GGG_T10.tif'
 output_file = r'../01_data/marken_rev23_damage_blok_GGG_T10.tif'
 
-wss_settings = {'duur_uur': 48, #uren
+wss_settings = {'inundation_period': 48, #uren
                 'herstelperiode':'10 dagen',
                 'maand':'sep',
                 'cfg_file':cfg_file}

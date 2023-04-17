@@ -82,7 +82,7 @@ srs_types = ['stowa', 'hhnk', 'lizard']
 cfg = {}
 #Load config files
 for srs in srs_types:
-    wss_settings = {'duur_uur': 24, #uren
+    wss_settings = {'inundation_period': 24, #uren
                     'herstelperiode':'10 dagen',
                     'maand':'sep',
                     'cfg_file':cfg_file[srs],

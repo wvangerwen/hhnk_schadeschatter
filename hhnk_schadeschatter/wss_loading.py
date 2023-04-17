@@ -40,7 +40,7 @@ def read_dmg_table_config(wss_settings) -> dict:
             self.direct = getattr(self, f"direct_{wss_settings['dmg_type']}")
             self.indirect = getattr(self, f"indirect_{wss_settings['dmg_type']}")
 
-            x=wss_settings['duur_uur']
+            x=wss_settings['inundation_period']
             xp=dmg_table_general['inundatieduur']
             fp=self.gamma_inundatieduur
 
@@ -60,6 +60,9 @@ def read_dmg_table_config(wss_settings) -> dict:
         , '__call__')])
             return f"""{self.omschrijving} - {variables}"""
 
+
+    if not os.path.exists(wss_settings['cfg_file']):
+        raise Exception(f"could not find config file in: {wss_settings['cfg_file']}")
     parser = configparser.ConfigParser()
     parser.read(filenames=wss_settings['cfg_file'])
 

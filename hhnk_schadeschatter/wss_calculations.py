@@ -1,9 +1,19 @@
+# %%
+import os
+import sys
+from pathlib import Path
+
 import numpy as np
+
+if str(Path(os.getcwd()).parent.parent) not in sys.path:
+    sys.path.append(str(Path(os.getcwd()).parent))
+
+import hhnk_schadeschatter.wss_main as wss_main
 
 DMG_NODATA = 0 #let op staat dubbel, ook in wss_main.
 
 
-def calculate_damage(caller, lu_block, depth_block, indices, dmg_table_landuse, dmg_table_general, pixel_factor):
+def calculate_damage(caller:wss_main.Waterschadeschatter, lu_block:np.array, depth_block, indices, dmg_table_landuse, dmg_table_general, pixel_factor):
     #GAMMA DEPTH CALCULATION
 
     #Interpoleren van het diepteraster en de gamma array.
@@ -14,7 +24,8 @@ def calculate_damage(caller, lu_block, depth_block, indices, dmg_table_landuse, 
 
     #Zoek voor de diepte_array de dichtst bijliggende index wanneer vergeleken met xp.
     #Ookal gaat dit 'links', we willen de index hebben daarom krijg index_onder -1
-    depth_block=np.round(depth_block,2) #FIXME Stowa WSS rond af op 2 decimalen. 
+    
+    # depth_block=np.round(depth_block,2) #FIXME Stowa WSS rond af op 2 decimalen. 
     depth_mask = depth_block==caller.depth_raster.nodata
 
     index_boven = np.searchsorted(xp, depth_block, side='left')

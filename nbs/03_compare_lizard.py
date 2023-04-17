@@ -137,7 +137,7 @@ depth_file = test_folder.depth_lizard.path
 output_file = test_folder.dmg_local.path
 
 # %%
-wss_settings = {'duur_uur': 48, #uren
+wss_settings = {'inundation_period': 48, #uren
                 'herstelperiode':'10 dagen',
                 'maand':'sep',
                 'cfg_file':cfg_file,
