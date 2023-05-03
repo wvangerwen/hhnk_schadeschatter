@@ -3,5 +3,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-/01_data/
+/01_data/*
+!01_data/cfg
 local_settings.py
