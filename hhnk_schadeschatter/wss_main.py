@@ -41,7 +41,8 @@ class Waterschadeschatter():
                  depth_file, 
                  landuse_file, 
                  wss_settings, 
-                 min_block_size=2048, ):
+                 min_block_size=2048,
+                 ):
         self.wss_settings = wss_settings
         self.min_block_size=min_block_size
         self.lu_raster = hrt.Raster(landuse_file)
