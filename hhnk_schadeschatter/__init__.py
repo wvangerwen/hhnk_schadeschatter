@@ -1,3 +1,5 @@
 import hhnk_schadeschatter.wss_calculations as wss_calculations
 import hhnk_schadeschatter.wss_loading as wss_loading
 import hhnk_schadeschatter.wss_main as wss_main
+
+from hhnk_schadeschatter.wss_main import Waterschadeschatter

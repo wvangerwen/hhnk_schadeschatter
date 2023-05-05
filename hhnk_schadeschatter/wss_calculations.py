@@ -13,7 +13,15 @@ import hhnk_schadeschatter.wss_main as wss_main
 DMG_NODATA = 0 #let op staat dubbel, ook in wss_main.
 
 
-def calculate_damage(caller:wss_main.Waterschadeschatter, lu_block:np.array, depth_block, indices, dmg_table_landuse, dmg_table_general, pixel_factor):
+def calculate_damage(caller:wss_main.Waterschadeschatter, 
+                     lu_block:np.array, 
+                     depth_block, 
+                     indices, 
+                     dmg_table_landuse, 
+                     dmg_table_general, 
+                     pixel_factor, 
+                     calculation_type:str="sum"): 
+    """calculation_type in ["sum","direct","indirect"]"""
     #GAMMA DEPTH CALCULATION
 
     #Interpoleren van het diepteraster en de gamma array.
@@ -88,4 +96,12 @@ def calculate_damage(caller:wss_main.Waterschadeschatter, lu_block:np.array, dep
     # Damage
     #schade = max. directe schade · γdiepte · γduur · γseizoen + indirecte schade per dag · hersteltijd
     # damage is per m2. Multiply by pixelfactor to get damage per pixel.
-    return (damage_direct * gamma_inundatiediepte + damage_indirect) * pixel_factor
+    if calculation_type == "sum":
+        return (damage_direct * gamma_inundatiediepte + damage_indirect) * pixel_factor
+    elif calculation_type == "direct":
+        return (damage_direct * gamma_inundatiediepte) * pixel_factor    
+    elif calculation_type == "indirect":
+        return (damage_indirect) * pixel_factor
+
+    # return (damage_direct * gamma_inundatiediepte + damage_indirect) * pixel_factor
+    # return (damage_direct * gamma_inundatiediepte) * pixel_factor

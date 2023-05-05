@@ -187,10 +187,13 @@ for index, row in gdf.iterrows():
 
                     wss_local = wss_main.Waterschadeschatter(depth_file=getattr(pgb_folder, f'depth_{ws}').path, 
                                                 landuse_file=landuse_file, 
-                                                output_file=getattr(pgb_folder, f'dmg_{ws}').path,
                                                 wss_settings=wss_settings)
-                    wss_local.create_output_raster() # Aanmaken leeg output raster.
-                    wss_local.run(initialize_output=False) #Berekenen schaderaster
+                    
+                    wss_local.run(output_raster=hrt.Raster(getattr(pgb_folder, f'dmg_{ws}').path), 
+                                                        calculation_type="sum", 
+                                                        verbose=False, 
+                                                        overwrite=False,
+                                                        )
                     # break
 
 

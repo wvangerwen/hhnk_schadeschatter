@@ -37,14 +37,17 @@ class Waterschadeschatter():
     dus ook meegenomen bij de vertaling van waterstand naar waterdiepte. 
     """
 
-    def __init__(self, depth_file, landuse_file, output_file, wss_settings, min_block_size=2048):
+    def __init__(self, 
+                 depth_file, 
+                 landuse_file, 
+                 wss_settings, 
+                 min_block_size=2048, ):
         self.wss_settings = wss_settings
         self.min_block_size=min_block_size
-        self.output_file = output_file
         self.lu_raster = hrt.Raster(landuse_file)
         self.depth_raster = hrt.Raster(depth_file, self.min_block_size)
         self.gamma_inundatiediepte = None
-
+        
         self.validate()
 
         #Inladen configuratie
@@ -61,24 +64,24 @@ class Waterschadeschatter():
                 raise Exception(f"could not find input file in: {filepath}")
 
 
-    def create_output_raster(self, verbose=True, overwrite=False):
-        """Create empty damage output raster"""
-        #Check if function should continue.
-        cont=True
-        if not overwrite and os.path.exists(self.output_file):
-            cont=False
+    # def create_output_raster(self, output_raster, verbose=False, overwrite=False):
+    #     """Create empty damage output raster"""
+    #     #Check if function should continue.
+    #     cont=True
+    #     if not overwrite and os.path.exists(output_raster):
+    #         cont=False
             
 
-        if cont==True:
-            if verbose:
-                print(f"creating output raster: {self.output_file}")
-            target_ds = hrt.create_new_raster_file(file_name=self.output_file,
-                                                    nodata=DMG_NODATA,
-                                                    meta=self.depth_raster.metadata,)
-            target_ds = None
-        else:
-            if verbose:
-                print(f"output raster already exists: {self.output_file}")
+    #     if cont==True:
+    #         if verbose:
+    #             print(f"creating output raster: {output_raster}")
+    #         target_ds = hrt.create_new_raster_file(file_name=output_raster.name,
+    #                                                 nodata=DMG_NODATA,
+    #                                                 meta=self.depth_raster.metadata,)
+    #         target_ds = None
+    #     else:
+    #         if verbose:
+    #             print(f"output raster already exists: {output_file}")
 
 
     def get_dmg_table_indices(self):
@@ -89,16 +92,30 @@ class Waterschadeschatter():
         return indices
 
 
-    def run(self, initialize_output=True):
+    def run(self, 
+            output_raster:hrt.Raster, 
+            calculation_type="sum", 
+            verbose=False, 
+            overwrite=False,
+            ):
+        """
+        Calculation type options: 'sum','direct','indirect'
+        """
 
-        if initialize_output:
-            self.create_output_raster(verbose=True)
-        else:
-            if not os.path.exists(self.output_file):
-                print(f'Output {self.output_file} does not exist. Run this function with initialize_output=True')
+        if output_raster.exists:
+            if overwrite is False:
                 return
+            else:
+                output_raster.pl.unlink()
 
-        target_ds=gdal.Open(str(self.output_file), gdal.GA_Update)
+        #Create output raster
+        output_raster.create(metadata=self.depth_raster.metadata,
+                                nodata=DMG_NODATA, 
+                                verbose=verbose, 
+                                overwrite=overwrite)
+
+        #Load raster so we can edit it.
+        target_ds=output_raster.open_gdal_source_write()
         dmg_band = target_ds.GetRasterBand(1)
 
         #Difference between landuse and depth raster.
@@ -132,10 +149,12 @@ class Waterschadeschatter():
                                                 indices=self.indices, 
                                                 dmg_table_landuse=self.dmg_table_landuse, 
                                                 dmg_table_general=self.dmg_table_general, 
-                                                pixel_factor=pixel_factor)
-
+                                                pixel_factor=pixel_factor,
+                                                calculation_type = calculation_type,
+                                                )
                     #Write to file
                     dmg_band.WriteArray(damage_block, xoff=window_depth[0], yoff=window_depth[1])
+       
                 print(f"{idx} / {len_total}", end= '\r')
                 # break
                 
@@ -173,15 +192,18 @@ if __name__ == '__main__':
                         'maand':'sep',
                         'cfg_file':cfg_file,
                         'dmg_type':'gem'}
+        
+        # out_format = ["sum", "direct", "indirect"] 
 
         #Calculation
         self = Waterschadeschatter(depth_file=depth_file, 
                                 landuse_file=landuse_file, 
-                                output_file=output_file,
-                                wss_settings=wss_settings)
-
-        # Aanmaken leeg output raster.
-        self.create_output_raster()
+                                wss_settings=wss_settings,
+                                )
 
         # Berkenen schaderaster
-        self.run(initialize_output=False)
+        self.run(output_raster=hrt.Raster(output_file), 
+            calculation_type="sum", 
+            verbose=True, 
+            overwrite=False,
+            )
