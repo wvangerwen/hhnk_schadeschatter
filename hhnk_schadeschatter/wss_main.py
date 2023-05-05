@@ -65,26 +65,6 @@ class Waterschadeschatter():
                 raise Exception(f"could not find input file in: {filepath}")
 
 
-    # def create_output_raster(self, output_raster, verbose=False, overwrite=False):
-    #     """Create empty damage output raster"""
-    #     #Check if function should continue.
-    #     cont=True
-    #     if not overwrite and os.path.exists(output_raster):
-    #         cont=False
-            
-
-    #     if cont==True:
-    #         if verbose:
-    #             print(f"creating output raster: {output_raster}")
-    #         target_ds = hrt.create_new_raster_file(file_name=output_raster.name,
-    #                                                 nodata=DMG_NODATA,
-    #                                                 meta=self.depth_raster.metadata,)
-    #         target_ds = None
-    #     else:
-    #         if verbose:
-    #             print(f"output raster already exists: {output_file}")
-
-
     def get_dmg_table_indices(self):
         """Check the index in the table using the input values for herstelperiode and maand."""
         indices={}

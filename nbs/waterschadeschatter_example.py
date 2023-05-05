@@ -88,11 +88,14 @@ wss_settings = {'inundation_period': 48, #uren
 # Calculation
 wss_local = wss_main.Waterschadeschatter(depth_file=depth_file, 
                             landuse_file=landuse_file, 
-                            output_file=output_file,
                             wss_settings=wss_settings)
 
-wss_local.create_output_raster() # Aanmaken leeg output raster.
-wss_local.run(initialize_output=False) #Berekenen schaderaster
+
+wss_local.run(output_raster=hrt.Raster(output_file), 
+    calculation_type="sum", 
+    verbose=True, 
+    overwrite=False,
+    )
 
 
 
